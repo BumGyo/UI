@@ -457,3 +457,148 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------- 수정된 메인 페이지 ---------------- */
+
+.dashboard-body.only-main {
+  display: block;
+  padding: 20px;
+}
+
+.range-box {
+  margin-top: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.date-range-inputs {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-input-group label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.date-input-group input {
+  width: 190px;
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  font-size: 15px;
+  outline: none;
+}
+
+.date-input-group input:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+}
+
+.range-wave {
+  padding-bottom: 13px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.quick-range-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.quick-range-buttons button {
+  padding: 13px 18px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-weight: 700;
+  color: #374151;
+}
+
+.quick-range-buttons button:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+
+.content-grid.wide-video {
+  grid-template-columns: 0.8fr 1.6fr;
+  align-items: start;
+}
+
+.video-panel-large {
+  min-height: 640px;
+}
+
+.video-area.large .fake-video {
+  aspect-ratio: 16 / 9;
+  min-height: 430px;
+}
+
+.video-date-text {
+  position: absolute;
+  top: 42px;
+  left: 18px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+}
+
+.empty-video-box {
+  margin-top: 18px;
+  min-height: 430px;
+  border-radius: 18px;
+  border: 1px dashed #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  background: #f8fafc;
+}
+
+@media (max-width: 1100px) {
+  .content-grid.wide-video {
+    grid-template-columns: 1fr;
+  }
+
+  .video-area.large .fake-video {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 700px) {
+  .date-range-inputs {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-input-group input {
+    width: 100%;
+  }
+
+  .range-wave {
+    display: none;
+  }
+
+  .quick-range-buttons {
+    width: 100%;
+  }
+
+  .quick-range-buttons button {
+    flex: 1;
+  }
+}
