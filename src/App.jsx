@@ -53,9 +53,9 @@ function LoginPage({ onLogin }) {
   const [pw, setPw] = useState("");
 
   return (
-    <div className="login-page">
-      <div className="login-left">
-        <div className="brand-box">
+    <div className="login-layout">
+      <div className="login-left-panel">
+        <div className="brand-content">
           <div className="brand-badge">Parking Scratch Detection</div>
           <h1>주차 사고 이벤트 확인 시스템</h1>
           <p>
@@ -65,28 +65,37 @@ function LoginPage({ onLogin }) {
         </div>
       </div>
 
-      <div className="login-right">
-        <div className="login-card">
+      <div className="login-right-panel">
+        <div className="login-form-wrapper">
           <h2>로그인</h2>
           <p className="login-subtitle">관리자 화면으로 접속합니다.</p>
 
-          <label>아이디</label>
-          <input
-            type="text"
-            placeholder="admin"
-            value={id}
-            onChange={(e) => setId(e.target.value)}
-          />
+          <div className="input-group">
+            <input
+              type="text"
+              placeholder="admin"
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+            />
+          </div>
 
-          <label>비밀번호</label>
-          <input
-            type="password"
-            placeholder="password"
-            value={pw}
-            onChange={(e) => setPw(e.target.value)}
-          />
+          <div className="input-group">
+            <input
+              type="password"
+              placeholder="password"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+            />
+          </div>
 
-          <button onClick={onLogin}>로그인</button>
+          <div className="login-options">
+            <label className="remember-me">
+              <input type="checkbox" /> Remember me
+            </label>
+            <a href="#none" className="support-link">Support</a>
+          </div>
+
+          <button className="login-submit-btn" onClick={onLogin}>로그인</button>
 
           <div className="login-tip">
             ※ 현재는 시연용 UI 프로토타입입니다.
