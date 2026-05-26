@@ -209,19 +209,22 @@ function getVideosByDateApi(videos) {
 }
 
 // 2. 이벤트 통계 분석 뷰 (Custom SVG Charts)
-function AnalyticsView() {
+function AnalyticsView({ filteredVideos, filterDays, setFilterDays }) {
   const stats = useMemo(() => {
     let totalEvents = 0;
     let pendingCount = 0;
     let resolvedCount = 0;
-    let falseAlarmCount = 0;
     
     const dateCounts = {};
     const cameraCounts = {};
     const eventTypeCounts = {};
     const hourCounts = Array(24).fill(0);
 
-    mockVideos.forEach(video => {
+    // Group matching video list
+    const videoIds = new Set(filteredVideos.map(v => v.id));
+    const matchingVideos = mockVideos.filter(v => videoIds.has(v.id));
+
+    matchingVideos.forEach(video => {
       const [startHour] = video.startTime.split(":").map(Number);
       
       video.events.forEach(event => {
@@ -230,7 +233,6 @@ function AnalyticsView() {
         // Status counts
         if (event.status === "확인 필요") pendingCount++;
         else if (event.status === "분석 완료") resolvedCount++;
-        else if (event.status === "오탐 가능") falseAlarmCount++;
 
         // Date grouping
         dateCounts[video.date] = (dateCounts[video.date] || 0) + 1;
@@ -287,20 +289,17 @@ function AnalyticsView() {
       else hourlyGroups[3].count += count;
     }
 
-    const falseAlarmRate = totalEvents > 0 ? ((falseAlarmCount / totalEvents) * 100).toFixed(1) : 0;
-
     return {
-      totalVideos: mockVideos.length,
+      totalVideos: matchingVideos.length,
       totalEvents,
       pendingCount,
       resolvedCount,
-      falseAlarmRate,
       sortedDates,
       cameraList,
       eventTypeList,
       hourlyGroups
     };
-  }, []);
+  }, [filteredVideos]);
 
   const dailyTrendChart = useMemo(() => {
     const width = 500;
@@ -517,58 +516,66 @@ function AnalyticsView() {
         <p>CCTV 녹화본에서 감지된 차량 사고 및 접촉 의심 이벤트 통계 요약입니다.</p>
       </div>
 
-      <div className="analytics-summary-cards">
-        <div className="summary-card">
-          <div className="card-icon">🎥</div>
-          <div className="card-data">
-            <span className="card-label">분석된 총 영상</span>
-            <span className="card-value">{stats.totalVideos}개</span>
-          </div>
-        </div>
-        <div className="summary-card">
-          <div className="card-icon">🚨</div>
-          <div className="card-data">
-            <span className="card-label">누적 감지 이벤트</span>
-            <span className="card-value">{stats.totalEvents}건</span>
-          </div>
-        </div>
-        <div className="summary-card warning">
-          <div className="card-icon">⚠️</div>
-          <div className="card-data">
-            <span className="card-label">확인 필요 이벤트</span>
-            <span className="card-value">{stats.pendingCount}건</span>
-          </div>
-        </div>
-        <div className="summary-card info">
-          <div className="card-icon">⚙️</div>
-          <div className="card-data">
-            <span className="card-label">오탐 비율</span>
-            <span className="card-value">{stats.falseAlarmRate}%</span>
-          </div>
-        </div>
+      {/* 기간 필터 */}
+      <div className="filter-pills" style={{ marginBottom: "24px" }}>
+        <button className={filterDays === 7 ? "active" : ""} onClick={() => setFilterDays(7)}>1주일</button>
+        <button className={filterDays === 14 ? "active" : ""} onClick={() => setFilterDays(14)}>2주일</button>
+        <button className={filterDays === 30 ? "active" : ""} onClick={() => setFilterDays(30)}>1개월</button>
+        <button className={filterDays === 90 ? "active" : ""} onClick={() => setFilterDays(90)}>3개월</button>
+        <button className={filterDays === 9999 ? "active" : ""} onClick={() => setFilterDays(9999)}>전체</button>
       </div>
 
-      <div className="analytics-grid">
-        <div className="analytics-chart-card">
-          <h3>📈 날짜별 감지 이벤트 추이</h3>
-          <div className="chart-wrapper">{dailyTrendChart}</div>
-        </div>
+      {stats.totalEvents === 0 ? (
+        <div className="empty-state" style={{ padding: "80px 20px" }}>선택한 기간에 감지된 이벤트 통계 데이터가 없습니다.</div>
+      ) : (
+        <>
+          <div className="analytics-summary-cards">
+            <div className="summary-card">
+              <div className="card-icon">🎥</div>
+              <div className="card-data">
+                <span className="card-label">분석된 총 영상</span>
+                <span className="card-value">{stats.totalVideos}개</span>
+              </div>
+            </div>
+            <div className="summary-card">
+              <div className="card-icon">🚨</div>
+              <div className="card-data">
+                <span className="card-label">누적 감지 이벤트</span>
+                <span className="card-value">{stats.totalEvents}건</span>
+              </div>
+            </div>
+            <div className="summary-card warning">
+              <div className="card-icon">⚠️</div>
+              <div className="card-data">
+                <span className="card-label">확인 필요 이벤트</span>
+                <span className="card-value">{stats.pendingCount}건</span>
+              </div>
+            </div>
+          </div>
 
-        <div className="analytics-chart-card">
-          <h3>🍩 이벤트 유형별 비율</h3>
-          <div className="chart-wrapper donut-wrapper">{donutChart}</div>
-        </div>
+          <div className="analytics-grid">
+            <div className="analytics-chart-card">
+              <h3>📈 날짜별 감지 이벤트 추이</h3>
+              <div className="chart-wrapper">{dailyTrendChart}</div>
+            </div>
 
-        <div className="analytics-chart-card">
-          <h3>⏱️ 시간대별 발생 빈도</h3>
-          <div className="chart-wrapper">{hourlyChartSvg}</div>
-        </div>
+            <div className="analytics-chart-card">
+              <h3>🍩 이벤트 유형별 비율</h3>
+              <div className="chart-wrapper donut-wrapper">{donutChart}</div>
+            </div>
 
-        <div className="analytics-chart-card">
-          <h3>📹 카메라별 감지 현황</h3>
-          <div className="chart-wrapper">{cameraStats}</div>
-        </div>
-      </div>
+            <div className="analytics-chart-card">
+              <h3>⏱️ 시간대별 발생 빈도</h3>
+              <div className="chart-wrapper">{hourlyChartSvg}</div>
+            </div>
+
+            <div className="analytics-chart-card">
+              <h3>📹 카메라별 감지 현황</h3>
+              <div className="chart-wrapper">{cameraStats}</div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -662,6 +669,7 @@ function Dashboard({ onLogout }) {
 
   // 홈으로 돌아가기
   const handleBackToHome = () => {
+    setCurrentView("dashboard");
     setSelectedVideo(null);
     setCurrentEventId(null);
     setIsPlaying(false);
@@ -689,23 +697,7 @@ function Dashboard({ onLogout }) {
           <button className="nav-logo nav-home-btn" onClick={handleBackToHome}>AI COMS</button>
         </div>
         <div className="nav-section nav-center">
-          <div className="nav-tabs">
-            <button 
-              className={`nav-tab-item ${currentView === "dashboard" ? "active" : ""}`}
-              onClick={() => {
-                setCurrentView("dashboard");
-                setSelectedVideo(null);
-              }}
-            >
-              🖥️ 모니터링 대시보드
-            </button>
-            <button 
-              className={`nav-tab-item ${currentView === "analytics" ? "active" : ""}`}
-              onClick={() => setCurrentView("analytics")}
-            >
-              📊 이벤트 통계 그래프
-            </button>
-          </div>
+          <span className="nav-title" aria-hidden="true"></span>
         </div>
         <div className="nav-section nav-right">
           <div className="profile-menu-container">
@@ -759,10 +751,10 @@ function Dashboard({ onLogout }) {
 
                   <div className="dropdown-divider" />
 
-                  {/* 통계 분석 페이지 이동 */}
-                  <div className="dropdown-section-title">통계 분석</div>
+                  {/* 화면 이동 */}
+                  <div className="dropdown-section-title">화면 이동</div>
                   <button 
-                    className="dropdown-item" 
+                    className={`dropdown-item ${currentView === "analytics" ? "active-menu-item" : ""}`}
                     onClick={() => {
                       setIsProfileOpen(false);
                       setCurrentView("analytics");
@@ -808,15 +800,19 @@ function Dashboard({ onLogout }) {
 
       {/* 컨텐츠 영역: 통계 뷰 또는 모니터링 뷰 */}
       {currentView === "analytics" ? (
-        <AnalyticsView />
+        <AnalyticsView 
+          filteredVideos={filteredVideos} 
+          filterDays={filterDays} 
+          setFilterDays={setFilterDays} 
+        />
       ) : !selectedVideo ? (
         <main className="home-view">
           {/* 기간 필터 (유튜브 카테고리 필터 스타일) */}
           <div className="filter-pills">
             <button className={filterDays === 7 ? "active" : ""} onClick={() => setFilterDays(7)}>1주일</button>
             <button className={filterDays === 14 ? "active" : ""} onClick={() => setFilterDays(14)}>2주일</button>
-            <button className={filterDays === 30 ? "active" : ""} onClick={() => setFilterDays(30)}>1달</button>
-            <button className={filterDays === 90 ? "active" : ""} onClick={() => setFilterDays(90)}>3달</button>
+            <button className={filterDays === 30 ? "active" : ""} onClick={() => setFilterDays(30)}>1개월</button>
+            <button className={filterDays === 90 ? "active" : ""} onClick={() => setFilterDays(90)}>3개월</button>
             <button className={filterDays === 9999 ? "active" : ""} onClick={() => setFilterDays(9999)}>전체</button>
           </div>
 
