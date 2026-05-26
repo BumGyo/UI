@@ -645,77 +645,89 @@ button {
 }
 
 .event-item {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  padding: 9px;
-  border-radius: 10px;
+  padding: 12px;
+  border-radius: 12px;
   border: 1px solid #e2e8f0;
   cursor: pointer;
-  transition: 0.2s;
-  background: #f8fafc;
+  transition: all 0.2s ease;
+  background: #ffffff;
 }
 
 .event-item:hover {
   background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
 .event-item.active {
   border-color: #3b82f6;
   background: #eff6ff;
-  box-shadow: 0 0 0 1px #3b82f6;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
 }
 
-.event-play-btn {
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 8px;
-  background: #1d4ed8;
+.event-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.event-time-pill {
+  background: #1f2937;
   color: #ffffff;
-  padding: 0;
-  font-size: 13px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 800;
-  white-space: nowrap;
-  display: inline-flex;
+  font-family: monospace;
+}
+
+.event-actual-time-text {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  flex-grow: 1;
+  text-align: left;
+  margin-left: 8px;
+}
+
+.event-play-icon-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 10px;
+  display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.event-play-btn:hover {
-  background: #1e3a8a;
+.event-play-icon-btn:hover {
+  background: #1d4ed8;
+  transform: scale(1.1);
 }
 
-.event-time-block {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 66px;
+.event-item.active .event-play-icon-btn {
+  background: #2563eb;
 }
 
-.event-time {
-  background: #1f2937;
-  color: white;
-  padding: 5px 7px;
-  border-radius: 7px;
+.event-item-bottom {
+  text-align: left;
+}
+
+.event-title-text {
+  margin: 0;
   font-size: 13px;
-  font-weight: 900;
-  height: fit-content;
-  letter-spacing: 0;
-}
-
-.event-actual-time {
-  color: #1d4ed8;
-  font-size: 10px;
   font-weight: 700;
-  text-align: center;
-}
-
-.event-details h4 {
-  margin: 0 0 6px 0;
-  font-size: 12px;
   color: #1f2937;
+  line-height: 1.4;
 }
 
 .status-tag {
@@ -1991,28 +2003,27 @@ body.dark-mode .sidebar-open-btn:hover {
 
 /* 이벤트 목록 */
 body.dark-mode .event-item {
-  background: #1e293b;
-  border-color: #374151;
+  background: #111827;
+  border-color: #1f2937;
 }
 body.dark-mode .event-item.active {
-  border-color: #3b82f6;
   background: #172554;
-  box-shadow: 0 0 0 1px #3b82f6;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 body.dark-mode .event-item:hover {
-  background: #374151;
+  background: #1f2937;
+  border-color: #374151;
 }
-body.dark-mode .event-details h4 {
+body.dark-mode .event-time-pill {
+  background: #374151;
   color: #e2e8f0;
 }
-body.dark-mode .event-play-btn {
-  background: #3b82f6;
+body.dark-mode .event-actual-time-text {
+  color: #94a3b8;
 }
-body.dark-mode .event-play-btn:hover {
-  background: #2563eb;
-}
-body.dark-mode .event-actual-time {
-  color: #60a5fa;
+body.dark-mode .event-title-text {
+  color: #f8fafc;
 }
 
 /* 메타데이터 */

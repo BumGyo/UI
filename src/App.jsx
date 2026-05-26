@@ -214,7 +214,7 @@ function AnalyticsView({ filteredVideos, filterDays, setFilterDays }) {
     let totalEvents = 0;
     let pendingCount = 0;
     let resolvedCount = 0;
-    
+
     const dateCounts = {};
     const cameraCounts = {};
     const eventTypeCounts = {};
@@ -226,10 +226,10 @@ function AnalyticsView({ filteredVideos, filterDays, setFilterDays }) {
 
     matchingVideos.forEach(video => {
       const [startHour] = video.startTime.split(":").map(Number);
-      
+
       video.events.forEach(event => {
         totalEvents += 1;
-        
+
         // Status counts
         if (event.status === "확인 필요") pendingCount++;
         else if (event.status === "분석 완료") resolvedCount++;
@@ -246,7 +246,7 @@ function AnalyticsView({ filteredVideos, filterDays, setFilterDays }) {
         else if (event.title.includes("문콕")) type = "문콕 접촉 의심";
         else if (event.title.includes("충돌") || event.title.includes("접촉")) type = "차량 충돌 의심";
         else if (event.title.includes("접근") || event.title.includes("감지")) type = "인물 접근 감지";
-        
+
         eventTypeCounts[type] = (eventTypeCounts[type] || 0) + 1;
 
         // Hour computation
@@ -330,7 +330,7 @@ function AnalyticsView({ filteredVideos, filterDays, setFilterDays }) {
             <stop offset="100%" stopColor="var(--chart-primary)" stopOpacity="0.0" />
           </linearGradient>
         </defs>
-        
+
         {/* Y Axis Grid lines */}
         {[0, 1, 2, 3, 4, 5].map(v => {
           const y = height - paddingY - (v * plotH) / maxVal;
@@ -555,22 +555,22 @@ function AnalyticsView({ filteredVideos, filterDays, setFilterDays }) {
 
           <div className="analytics-grid">
             <div className="analytics-chart-card">
-              <h3>📈 날짜별 감지 이벤트 추이</h3>
+              <h3> 날짜별 감지 이벤트 추이</h3>
               <div className="chart-wrapper">{dailyTrendChart}</div>
             </div>
 
             <div className="analytics-chart-card">
-              <h3>🍩 이벤트 유형별 비율</h3>
+              <h3> 이벤트 유형별 비율</h3>
               <div className="chart-wrapper donut-wrapper">{donutChart}</div>
             </div>
 
             <div className="analytics-chart-card">
-              <h3>⏱️ 시간대별 발생 빈도</h3>
+              <h3> 시간대별 발생 빈도</h3>
               <div className="chart-wrapper">{hourlyChartSvg}</div>
             </div>
 
             <div className="analytics-chart-card">
-              <h3>📹 카메라별 감지 현황</h3>
+              <h3> 카메라별 감지 현황</h3>
               <div className="chart-wrapper">{cameraStats}</div>
             </div>
           </div>
@@ -701,8 +701,8 @@ function Dashboard({ onLogout }) {
         </div>
         <div className="nav-section nav-right">
           <div className="profile-menu-container">
-            <button 
-              className="profile-trigger-btn simple-avatar-trigger" 
+            <button
+              className="profile-trigger-btn simple-avatar-trigger"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               aria-label="프로필 메뉴 열기"
             >
@@ -728,8 +728,8 @@ function Dashboard({ onLogout }) {
 
                   {/* 내 정보 설정 (Account Settings) */}
                   <div className="dropdown-section-title">내 정보 설정</div>
-                  <button 
-                    className="dropdown-item" 
+                  <button
+                    className="dropdown-item"
                     onClick={() => {
                       setIsProfileOpen(false);
                       setIsSettingsOpen(true);
@@ -738,8 +738,8 @@ function Dashboard({ onLogout }) {
                   >
                     👤 관리자 정보 수정
                   </button>
-                  <button 
-                    className="dropdown-item" 
+                  <button
+                    className="dropdown-item"
                     onClick={() => {
                       setIsProfileOpen(false);
                       setIsSettingsOpen(true);
@@ -753,7 +753,7 @@ function Dashboard({ onLogout }) {
 
                   {/* 화면 이동 */}
                   <div className="dropdown-section-title">화면 이동</div>
-                  <button 
+                  <button
                     className={`dropdown-item ${currentView === "analytics" ? "active-menu-item" : ""}`}
                     onClick={() => {
                       setIsProfileOpen(false);
@@ -770,10 +770,10 @@ function Dashboard({ onLogout }) {
                   <div className="dropdown-item-toggle">
                     <span>🌙 다크 모드</span>
                     <label className="switch-mini">
-                      <input 
-                        type="checkbox" 
-                        checked={isDarkMode} 
-                        onChange={(e) => setIsDarkMode(e.target.checked)} 
+                      <input
+                        type="checkbox"
+                        checked={isDarkMode}
+                        onChange={(e) => setIsDarkMode(e.target.checked)}
                       />
                       <span className="slider-mini round"></span>
                     </label>
@@ -782,8 +782,8 @@ function Dashboard({ onLogout }) {
                   <div className="dropdown-divider" />
 
                   {/* 로그아웃 (Logout) */}
-                  <button 
-                    className="dropdown-item logout-item" 
+                  <button
+                    className="dropdown-item logout-item"
                     onClick={() => {
                       setIsProfileOpen(false);
                       onLogout();
@@ -800,10 +800,10 @@ function Dashboard({ onLogout }) {
 
       {/* 컨텐츠 영역: 통계 뷰 또는 모니터링 뷰 */}
       {currentView === "analytics" ? (
-        <AnalyticsView 
-          filteredVideos={filteredVideos} 
-          filterDays={filterDays} 
-          setFilterDays={setFilterDays} 
+        <AnalyticsView
+          filteredVideos={filteredVideos}
+          filterDays={filterDays}
+          setFilterDays={setFilterDays}
         />
       ) : !selectedVideo ? (
         <main className="home-view">
@@ -846,51 +846,50 @@ function Dashboard({ onLogout }) {
             <aside className={`event-sidebar ${!isSidebarOpen ? "collapsed" : ""}`}>
               {isSidebarOpen ? (
                 <>
-                <div className="event-sidebar-header">
-                  <div>
-                    <h3>감지된 이벤트 목록</h3>
-                    <p className="event-summary">총 {selectedVideo.events.length}건의 이벤트가 있습니다.</p>
-                  </div>
-                  <button
-                    className="sidebar-icon-btn"
-                    onClick={() => setIsSidebarOpen(false)}
-                    aria-label="이벤트 목록 닫기"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className="event-list">
-                  {selectedVideo.events.map((event) => (
-                    <div
-                      key={event.id}
-                      className={`event-item ${currentEventId === event.id ? "active" : ""}`}
-                      onClick={() => setCurrentEventId(event.id)}
+                  <div className="event-sidebar-header">
+                    <div>
+                      <h3>감지된 이벤트 목록</h3>
+                      <p className="event-summary">총 {selectedVideo.events.length}건의 이벤트가 있습니다.</p>
+                    </div>
+                    <button
+                      className="sidebar-icon-btn"
+                      onClick={() => setIsSidebarOpen(false)}
+                      aria-label="이벤트 목록 닫기"
                     >
-                      <button
-                        className="event-play-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCurrentEventId(event.id);
-                          setIsPlaying((playing) => !playing);
-                        }}
-                        aria-label={`${formatTime(event.timestamp)} 이벤트 재생 전환`}
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="event-list">
+                    {selectedVideo.events.map((event) => (
+                      <div
+                        key={event.id}
+                        className={`event-item ${currentEventId === event.id ? "active" : ""}`}
+                        onClick={() => setCurrentEventId(event.id)}
                       >
-                        {isPlaying && currentEventId === event.id ? "⏸" : "▶"}
-                      </button>
-                      <div className="event-time-block">
-                        <div className="event-time">{formatTime(event.timestamp)}</div>
-                        <div className="event-actual-time">
-                          {formatActualTime(selectedVideo.date, selectedVideo.startTime, event.timestamp)}
+                        <div className="event-item-top">
+                          <span className="event-time-pill">{formatTime(event.timestamp)}</span>
+                          <span className="event-actual-time-text">
+                            {formatActualTime(selectedVideo.date, selectedVideo.startTime, event.timestamp)}
+                          </span>
+                          <button
+                            className="event-play-icon-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCurrentEventId(event.id);
+                              setIsPlaying((playing) => !playing);
+                            }}
+                            aria-label={`${formatTime(event.timestamp)} 이벤트 재생 전환`}
+                          >
+                            {isPlaying && currentEventId === event.id ? "⏸" : "▶"}
+                          </button>
+                        </div>
+                        <div className="event-item-bottom">
+                          <h4 className="event-title-text">{event.title}</h4>
                         </div>
                       </div>
-                      <div className="event-details">
-                        <h4>{event.title}</h4>
-                        <span className={`status-tag ${event.status}`}>{event.status}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
                 </>
               ) : (
@@ -948,12 +947,12 @@ function Dashboard({ onLogout }) {
                   <div className="progress-track">
                     {/* 재생 진행률 (임시로 0%로 고정) */}
                     <div className="progress-fill" style={{ width: "0%" }}></div>
-                    
+
                     {/* 이벤트 마커 (타임라인의 빨간 점) */}
                     {selectedVideo.events.map((event) => {
                       const leftPosition = (event.timestamp / selectedVideo.duration) * 100;
                       return (
-                        <div 
+                        <div
                           key={event.id}
                           className={`event-marker ${currentEventId === event.id ? 'active' : ''}`}
                           style={{ left: `${leftPosition}%` }}
@@ -1010,13 +1009,13 @@ function Dashboard({ onLogout }) {
                       >
                         ▭
                       </button>
-                    <button
-                      className="control-btn fullscreen-btn"
-                      onClick={handleToggleFullscreen}
-                      aria-label="전체화면"
-                    >
-                      ⛶
-                    </button>
+                      <button
+                        className="control-btn fullscreen-btn"
+                        onClick={handleToggleFullscreen}
+                        aria-label="전체화면"
+                      >
+                        ⛶
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1103,44 +1102,44 @@ function Dashboard({ onLogout }) {
                 <div className="settings-tab-content">
                   <h2>내 정보 설정</h2>
                   <p className="tab-description">관리자 기본 정보를 확인 및 수정할 수 있습니다.</p>
-                  
+
                   <div className="settings-form-group">
                     <label>계정 아이디</label>
                     <input type="text" value={adminName} disabled className="disabled-input" />
                   </div>
-                  
+
                   <div className="settings-form-group">
                     <label>이름</label>
-                    <input 
-                      type="text" 
-                      value={adminRealName} 
-                      onChange={(e) => setAdminRealName(e.target.value)} 
+                    <input
+                      type="text"
+                      value={adminRealName}
+                      onChange={(e) => setAdminRealName(e.target.value)}
                       placeholder="이름 입력"
                     />
                   </div>
 
                   <div className="settings-form-group">
                     <label>연락처</label>
-                    <input 
-                      type="text" 
-                      value={adminPhone} 
-                      onChange={(e) => setAdminPhone(e.target.value)} 
+                    <input
+                      type="text"
+                      value={adminPhone}
+                      onChange={(e) => setAdminPhone(e.target.value)}
                       placeholder="연락처 입력"
                     />
                   </div>
 
                   <div className="settings-form-group">
                     <label>이메일 주소</label>
-                    <input 
-                      type="email" 
-                      value={adminEmail} 
-                      onChange={(e) => setAdminEmail(e.target.value)} 
+                    <input
+                      type="email"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
                       placeholder="이메일 입력"
                     />
                   </div>
 
-                  <button 
-                    className="settings-save-btn" 
+                  <button
+                    className="settings-save-btn"
                     onClick={() => {
                       if (!adminRealName || !adminPhone || !adminEmail) {
                         alert("필수 입력 항목이 누락되었습니다.");
@@ -1158,12 +1157,12 @@ function Dashboard({ onLogout }) {
                 <div className="settings-tab-content">
                   <h2>비밀번호 변경</h2>
                   <p className="tab-description">시스템 보안을 위해 주기적으로 비밀번호를 변경해 주십시오.</p>
-                  
+
                   <div className="settings-form-group">
                     <label>현재 비밀번호</label>
-                    <input 
-                      type="password" 
-                      placeholder="현재 비밀번호 입력" 
+                    <input
+                      type="password"
+                      placeholder="현재 비밀번호 입력"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                     />
@@ -1171,9 +1170,9 @@ function Dashboard({ onLogout }) {
 
                   <div className="settings-form-group">
                     <label>새 비밀번호</label>
-                    <input 
-                      type="password" 
-                      placeholder="새 비밀번호 입력" 
+                    <input
+                      type="password"
+                      placeholder="새 비밀번호 입력"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                     />
@@ -1181,16 +1180,16 @@ function Dashboard({ onLogout }) {
 
                   <div className="settings-form-group">
                     <label>새 비밀번호 확인</label>
-                    <input 
-                      type="password" 
-                      placeholder="새 비밀번호 다시 입력" 
+                    <input
+                      type="password"
+                      placeholder="새 비밀번호 다시 입력"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                   </div>
 
-                  <button 
-                    className="settings-save-btn" 
+                  <button
+                    className="settings-save-btn"
                     onClick={() => {
                       if (!currentPassword || !newPassword || !confirmPassword) {
                         alert("모든 필드를 입력해 주세요.");
