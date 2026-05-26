@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import "./App.css";
 
 // 1. 영상 중심의 Mock 데이터 (영상 1개 안에 여러 이벤트가 포함됨)
@@ -208,10 +208,373 @@ function getVideosByDateApi(videos) {
   }, {});
 }
 
+// 2. 이벤트 통계 분석 뷰 (Custom SVG Charts)
+function AnalyticsView() {
+  const stats = useMemo(() => {
+    let totalEvents = 0;
+    let pendingCount = 0;
+    let resolvedCount = 0;
+    let falseAlarmCount = 0;
+    
+    const dateCounts = {};
+    const cameraCounts = {};
+    const eventTypeCounts = {};
+    const hourCounts = Array(24).fill(0);
+
+    mockVideos.forEach(video => {
+      const [startHour] = video.startTime.split(":").map(Number);
+      
+      video.events.forEach(event => {
+        totalEvents += 1;
+        
+        // Status counts
+        if (event.status === "확인 필요") pendingCount++;
+        else if (event.status === "분석 완료") resolvedCount++;
+        else if (event.status === "오탐 가능") falseAlarmCount++;
+
+        // Date grouping
+        dateCounts[video.date] = (dateCounts[video.date] || 0) + 1;
+
+        // Camera grouping
+        cameraCounts[video.camera] = (cameraCounts[video.camera] || 0) + 1;
+
+        // Type grouping
+        let type = "기타";
+        if (event.title.includes("스크래치") || event.title.includes("긁힘")) type = "스크래치 의심";
+        else if (event.title.includes("문콕")) type = "문콕 접촉 의심";
+        else if (event.title.includes("충돌") || event.title.includes("접촉")) type = "차량 충돌 의심";
+        else if (event.title.includes("접근") || event.title.includes("감지")) type = "인물 접근 감지";
+        
+        eventTypeCounts[type] = (eventTypeCounts[type] || 0) + 1;
+
+        // Hour computation
+        const eventSeconds = event.timestamp;
+        const eventHour = (startHour + Math.floor(eventSeconds / 3600)) % 24;
+        hourCounts[eventHour]++;
+      });
+    });
+
+    // Sort dates chronologically
+    const sortedDates = Object.keys(dateCounts).sort().map(date => ({
+      date: date.substring(5), // MM-DD
+      count: dateCounts[date]
+    }));
+
+    // Convert cameras to array
+    const cameraList = Object.keys(cameraCounts).map(cam => ({
+      name: cam,
+      count: cameraCounts[cam]
+    })).sort((a, b) => b.count - a.count);
+
+    // Convert event types to array
+    const eventTypeList = Object.keys(eventTypeCounts).map(type => ({
+      name: type,
+      count: eventTypeCounts[type]
+    }));
+
+    // Hourly grouped brackets
+    const hourlyGroups = [
+      { name: "새벽 (00-06)", count: 0 },
+      { name: "오전 (06-12)", count: 0 },
+      { name: "오후 (12-18)", count: 0 },
+      { name: "야간 (18-24)", count: 0 }
+    ];
+    for (let h = 0; h < 24; h++) {
+      const count = hourCounts[h];
+      if (h < 6) hourlyGroups[0].count += count;
+      else if (h < 12) hourlyGroups[1].count += count;
+      else if (h < 18) hourlyGroups[2].count += count;
+      else hourlyGroups[3].count += count;
+    }
+
+    const falseAlarmRate = totalEvents > 0 ? ((falseAlarmCount / totalEvents) * 100).toFixed(1) : 0;
+
+    return {
+      totalVideos: mockVideos.length,
+      totalEvents,
+      pendingCount,
+      resolvedCount,
+      falseAlarmRate,
+      sortedDates,
+      cameraList,
+      eventTypeList,
+      hourlyGroups
+    };
+  }, []);
+
+  const dailyTrendChart = useMemo(() => {
+    const width = 500;
+    const height = 200;
+    const paddingX = 40;
+    const paddingY = 30;
+    const plotW = width - paddingX * 2;
+    const plotH = height - paddingY * 2;
+    const data = stats.sortedDates;
+    if (data.length === 0) return null;
+
+    const maxVal = Math.max(...data.map(d => d.count), 4) + 1;
+
+    const points = data.map((d, i) => {
+      const x = paddingX + (i * plotW) / (data.length - 1);
+      const y = height - paddingY - (d.count * plotH) / maxVal;
+      return { x, y, label: d.date, value: d.count };
+    });
+
+    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+    const areaPath = `${linePath} L ${points[points.length - 1].x} ${height - paddingY} L ${points[0].x} ${height - paddingY} Z`;
+
+    return (
+      <svg width="100%" height="200" viewBox={`0 0 ${width} ${height}`} className="stats-svg">
+        <defs>
+          <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--chart-primary)" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="var(--chart-primary)" stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+        
+        {/* Y Axis Grid lines */}
+        {[0, 1, 2, 3, 4, 5].map(v => {
+          const y = height - paddingY - (v * plotH) / maxVal;
+          return (
+            <g key={v}>
+              <line x1={paddingX} y1={y} x2={width - paddingX} y2={y} stroke="var(--chart-grid)" strokeDasharray="3 3" />
+              <text x={paddingX - 10} y={y + 4} textAnchor="end" className="chart-axis-text" fill="var(--chart-text)">{v}</text>
+            </g>
+          );
+        })}
+
+        {/* Area */}
+        <path d={areaPath} fill="url(#area-gradient)" />
+
+        {/* Line */}
+        <path d={linePath} fill="none" stroke="var(--chart-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Dots */}
+        {points.map((p, i) => (
+          <g key={i}>
+            <circle cx={p.x} cy={p.y} r="4" fill="var(--chart-primary)" stroke="var(--chart-grid)" strokeWidth="1" />
+            <text x={p.x} y={p.y - 10} textAnchor="middle" className="chart-value-text" fill="var(--chart-text-primary)">
+              {p.value}
+            </text>
+            <text x={p.x} y={height - paddingY + 16} textAnchor="middle" className="chart-axis-text" fill="var(--chart-text)">
+              {p.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    );
+  }, [stats.sortedDates]);
+
+  const donutChart = useMemo(() => {
+    const total = stats.totalEvents;
+    if (total === 0) return null;
+    const r = 50;
+    const circ = 2 * Math.PI * r;
+    let currentAngle = -90;
+
+    const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+
+    const segments = [];
+    for (let idx = 0; idx < stats.eventTypeList.length; idx++) {
+      const type = stats.eventTypeList[idx];
+      const percentage = (type.count / total) * 100;
+      const angle = (type.count / total) * 360;
+      const strokeDashoffset = circ - (type.count / total) * circ;
+      const rotation = currentAngle;
+      currentAngle += angle;
+      const color = colors[idx % colors.length];
+
+      segments.push({
+        ...type,
+        percentage: percentage.toFixed(1),
+        strokeDashoffset,
+        rotation,
+        color
+      });
+    }
+
+    return (
+      <div className="donut-chart-container">
+        <svg width="180" height="180" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r={r} fill="transparent" stroke="var(--chart-grid)" strokeWidth="16" />
+          {segments.map((seg, idx) => (
+            <circle
+              key={idx}
+              cx="100"
+              cy="100"
+              r={r}
+              fill="transparent"
+              stroke={seg.color}
+              strokeWidth="18"
+              strokeDasharray={circ}
+              strokeDashoffset={seg.strokeDashoffset}
+              transform={`rotate(${seg.rotation} 100 100)`}
+              className="donut-segment"
+            />
+          ))}
+          <g className="donut-center-text">
+            <text x="100" y="95" textAnchor="middle" className="donut-total" fill="var(--chart-text-primary)" style={{ fontSize: "28px", fontWeight: "800" }}>
+              {total}
+            </text>
+            <text x="100" y="115" textAnchor="middle" className="donut-label" fill="var(--chart-text)" style={{ fontSize: "12px", fontWeight: "600" }}>
+              총 감지 건수
+            </text>
+          </g>
+        </svg>
+
+        <div className="donut-legend">
+          {segments.map((seg, idx) => (
+            <div key={idx} className="legend-item">
+              <span className="legend-badge" style={{ backgroundColor: seg.color }} />
+              <span className="legend-name">{seg.name}</span>
+              <span className="legend-count">{seg.count}건 ({seg.percentage}%)</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }, [stats.eventTypeList, stats.totalEvents]);
+
+  const hourlyChartSvg = useMemo(() => {
+    const width = 450;
+    const height = 200;
+    const paddingX = 40;
+    const paddingY = 30;
+    const plotW = width - paddingX * 2;
+    const plotH = height - paddingY * 2;
+    const data = stats.hourlyGroups;
+    const maxVal = Math.max(...data.map(d => d.count), 4) + 1;
+
+    const barW = 32;
+    const gap = (plotW - barW * data.length) / (data.length - 1);
+
+    return (
+      <svg width="100%" height="200" viewBox={`0 0 ${width} ${height}`} className="stats-svg">
+        {[0, 1, 2, 3, 4, 5].map(v => {
+          const y = height - paddingY - (v * plotH) / maxVal;
+          return (
+            <g key={v}>
+              <line x1={paddingX} y1={y} x2={width - paddingX} y2={y} stroke="var(--chart-grid)" strokeDasharray="3 3" />
+              <text x={paddingX - 10} y={y + 4} textAnchor="end" className="chart-axis-text" fill="var(--chart-text)">{v}</text>
+            </g>
+          );
+        })}
+
+        {data.map((d, i) => {
+          const barH = (d.count * plotH) / maxVal;
+          const x = paddingX + i * (barW + gap);
+          const y = height - paddingY - barH;
+
+          return (
+            <g key={i}>
+              <rect
+                x={x}
+                y={y}
+                width={barW}
+                height={barH}
+                fill="var(--chart-secondary)"
+                rx="4"
+                className="chart-bar"
+              />
+              <text x={x + barW / 2} y={y - 6} textAnchor="middle" className="chart-value-text" fill="var(--chart-text-primary)">
+                {d.count}
+              </text>
+              <text x={x + barW / 2} y={height - paddingY + 16} textAnchor="middle" className="chart-axis-text" fill="var(--chart-text)">
+                {d.name.split(" ")[0]}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    );
+  }, [stats.hourlyGroups]);
+
+  const cameraStats = useMemo(() => {
+    const maxCount = Math.max(...stats.cameraList.map(c => c.count), 1);
+
+    return (
+      <div className="camera-stats-list">
+        {stats.cameraList.map((cam, idx) => {
+          const pct = (cam.count / maxCount) * 100;
+          return (
+            <div key={idx} className="camera-stat-row">
+              <div className="camera-name">{cam.name}</div>
+              <div className="camera-bar-wrapper">
+                <div className="camera-bar-fill" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="camera-count">{cam.count}건</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }, [stats.cameraList]);
+
+  return (
+    <div className="analytics-view">
+      <div className="analytics-header">
+        <h2>📊 AI 감지 이벤트 통계 분석</h2>
+        <p>CCTV 녹화본에서 감지된 차량 사고 및 접촉 의심 이벤트 통계 요약입니다.</p>
+      </div>
+
+      <div className="analytics-summary-cards">
+        <div className="summary-card">
+          <div className="card-icon">🎥</div>
+          <div className="card-data">
+            <span className="card-label">분석된 총 영상</span>
+            <span className="card-value">{stats.totalVideos}개</span>
+          </div>
+        </div>
+        <div className="summary-card">
+          <div className="card-icon">🚨</div>
+          <div className="card-data">
+            <span className="card-label">누적 감지 이벤트</span>
+            <span className="card-value">{stats.totalEvents}건</span>
+          </div>
+        </div>
+        <div className="summary-card warning">
+          <div className="card-icon">⚠️</div>
+          <div className="card-data">
+            <span className="card-label">확인 필요 이벤트</span>
+            <span className="card-value">{stats.pendingCount}건</span>
+          </div>
+        </div>
+        <div className="summary-card info">
+          <div className="card-icon">⚙️</div>
+          <div className="card-data">
+            <span className="card-label">오탐 비율</span>
+            <span className="card-value">{stats.falseAlarmRate}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="analytics-grid">
+        <div className="analytics-chart-card">
+          <h3>📈 날짜별 감지 이벤트 추이</h3>
+          <div className="chart-wrapper">{dailyTrendChart}</div>
+        </div>
+
+        <div className="analytics-chart-card">
+          <h3>🍩 이벤트 유형별 비율</h3>
+          <div className="chart-wrapper donut-wrapper">{donutChart}</div>
+        </div>
+
+        <div className="analytics-chart-card">
+          <h3>⏱️ 시간대별 발생 빈도</h3>
+          <div className="chart-wrapper">{hourlyChartSvg}</div>
+        </div>
+
+        <div className="analytics-chart-card">
+          <h3>📹 카메라별 감지 현황</h3>
+          <div className="chart-wrapper">{cameraStats}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 대시보드 컴포넌트
 function Dashboard({ onLogout }) {
-  const today = new Date();
-  
   // 상태 관리
   const [filterDays, setFilterDays] = useState(7); // 기본 1주일
   const [selectedVideo, setSelectedVideo] = useState(null); // null이면 홈(그리드) 화면, 값이 있으면 영상 재생 화면
@@ -225,11 +588,41 @@ function Dashboard({ onLogout }) {
   const [calendarMonth, setCalendarMonth] = useState(new Date("2026-05-01T00:00:00"));
   const playerContainerRef = useRef(null);
 
+  // 프로필 & 설정 관련 상태
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState("account"); // "account", "security"
+  const [currentView, setCurrentView] = useState("dashboard"); // "dashboard", "analytics"
+
+  // 설정 정보
+  const adminName = "admin";
+  const [adminRealName, setAdminRealName] = useState("홍길동");
+  const [adminPhone, setAdminPhone] = useState("010-1234-5678");
+  const [adminEmail, setAdminEmail] = useState("admin@cbnu-capstone.com");
+
+  // 비밀번호 변경 필드
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // 테마 설정 (다크 모드)
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // 다크 모드 활성화 / 비활성화 제어
+  useEffect(() => {
+    if (isDarkMode) {
+      document.body.classList.add("dark-mode");
+    } else {
+      document.body.classList.remove("dark-mode");
+    }
+  }, [isDarkMode]);
+
   // 날짜 필터링 계산
   const filteredVideos = useMemo(() => {
+    const today = new Date();
     const startDate = formatDate(addDays(today, -filterDays));
     return mockVideos.filter((video) => video.date >= startDate);
-  }, [filterDays, today]);
+  }, [filterDays]);
 
   const videosByDate = useMemo(() => {
     return getVideosByDateApi(mockVideos);
@@ -296,15 +689,127 @@ function Dashboard({ onLogout }) {
           <button className="nav-logo nav-home-btn" onClick={handleBackToHome}>AI COMS</button>
         </div>
         <div className="nav-section nav-center">
-          <span className="nav-title" aria-hidden="true"></span>
+          <div className="nav-tabs">
+            <button 
+              className={`nav-tab-item ${currentView === "dashboard" ? "active" : ""}`}
+              onClick={() => {
+                setCurrentView("dashboard");
+                setSelectedVideo(null);
+              }}
+            >
+              🖥️ 모니터링 대시보드
+            </button>
+            <button 
+              className={`nav-tab-item ${currentView === "analytics" ? "active" : ""}`}
+              onClick={() => setCurrentView("analytics")}
+            >
+              📊 이벤트 통계 그래프
+            </button>
+          </div>
         </div>
         <div className="nav-section nav-right">
-          <button className="nav-logout-btn" onClick={onLogout}>로그아웃</button>
+          <div className="profile-menu-container">
+            <button 
+              className="profile-trigger-btn simple-avatar-trigger" 
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              aria-label="프로필 메뉴 열기"
+            >
+              <div className="profile-avatar">
+                <span>A</span>
+              </div>
+            </button>
+
+            {isProfileOpen && (
+              <>
+                <div className="dropdown-overlay" onClick={() => setIsProfileOpen(false)} />
+                <div className="profile-dropdown-menu">
+                  {/* 관리자 정보 요약 Header */}
+                  <div className="dropdown-header">
+                    <div className="header-avatar">A</div>
+                    <div className="header-info">
+                      <span className="info-name">{adminRealName} ({adminName})</span>
+                      <span className="info-role">시스템 관리자</span>
+                    </div>
+                  </div>
+
+                  <div className="dropdown-divider" />
+
+                  {/* 내 정보 설정 (Account Settings) */}
+                  <div className="dropdown-section-title">내 정보 설정</div>
+                  <button 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      setIsSettingsOpen(true);
+                      setActiveSettingsTab("account");
+                    }}
+                  >
+                    👤 관리자 정보 수정
+                  </button>
+                  <button 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      setIsSettingsOpen(true);
+                      setActiveSettingsTab("security");
+                    }}
+                  >
+                    🔑 비밀번호 변경
+                  </button>
+
+                  <div className="dropdown-divider" />
+
+                  {/* 통계 분석 페이지 이동 */}
+                  <div className="dropdown-section-title">통계 분석</div>
+                  <button 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      setCurrentView("analytics");
+                    }}
+                  >
+                    📊 이벤트 통계 그래프
+                  </button>
+
+                  <div className="dropdown-divider" />
+
+                  {/* 테마 설정 (Appearance) */}
+                  <div className="dropdown-section-title">테마 설정</div>
+                  <div className="dropdown-item-toggle">
+                    <span>🌙 다크 모드</span>
+                    <label className="switch-mini">
+                      <input 
+                        type="checkbox" 
+                        checked={isDarkMode} 
+                        onChange={(e) => setIsDarkMode(e.target.checked)} 
+                      />
+                      <span className="slider-mini round"></span>
+                    </label>
+                  </div>
+
+                  <div className="dropdown-divider" />
+
+                  {/* 로그아웃 (Logout) */}
+                  <button 
+                    className="dropdown-item logout-item" 
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      onLogout();
+                    }}
+                  >
+                    🚪 로그아웃
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* 컨텐츠 영역: 선택된 비디오가 없으면 유튜브 홈 스타일(그리드), 있으면 시청 스타일 */}
-      {!selectedVideo ? (
+      {/* 컨텐츠 영역: 통계 뷰 또는 모니터링 뷰 */}
+      {currentView === "analytics" ? (
+        <AnalyticsView />
+      ) : !selectedVideo ? (
         <main className="home-view">
           {/* 기간 필터 (유튜브 카테고리 필터 스타일) */}
           <div className="filter-pills">
@@ -569,6 +1074,149 @@ function Dashboard({ onLogout }) {
             </aside>
           </div>
         </main>
+      )}
+
+      {/* 설정 모달 */}
+      {isSettingsOpen && (
+        <div className="settings-modal-overlay" onClick={() => setIsSettingsOpen(false)}>
+          <div className="settings-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-modal-sidebar">
+              <h3>설정</h3>
+              <button
+                className={`settings-tab-btn ${activeSettingsTab === "account" ? "active" : ""}`}
+                onClick={() => setActiveSettingsTab("account")}
+              >
+                👤 내 정보 설정
+              </button>
+              <button
+                className={`settings-tab-btn ${activeSettingsTab === "security" ? "active" : ""}`}
+                onClick={() => setActiveSettingsTab("security")}
+              >
+                🔑 비밀번호 변경
+              </button>
+              <button
+                className="settings-modal-close-btn"
+                onClick={() => setIsSettingsOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="settings-modal-content">
+              {activeSettingsTab === "account" && (
+                <div className="settings-tab-content">
+                  <h2>내 정보 설정</h2>
+                  <p className="tab-description">관리자 기본 정보를 확인 및 수정할 수 있습니다.</p>
+                  
+                  <div className="settings-form-group">
+                    <label>계정 아이디</label>
+                    <input type="text" value={adminName} disabled className="disabled-input" />
+                  </div>
+                  
+                  <div className="settings-form-group">
+                    <label>이름</label>
+                    <input 
+                      type="text" 
+                      value={adminRealName} 
+                      onChange={(e) => setAdminRealName(e.target.value)} 
+                      placeholder="이름 입력"
+                    />
+                  </div>
+
+                  <div className="settings-form-group">
+                    <label>연락처</label>
+                    <input 
+                      type="text" 
+                      value={adminPhone} 
+                      onChange={(e) => setAdminPhone(e.target.value)} 
+                      placeholder="연락처 입력"
+                    />
+                  </div>
+
+                  <div className="settings-form-group">
+                    <label>이메일 주소</label>
+                    <input 
+                      type="email" 
+                      value={adminEmail} 
+                      onChange={(e) => setAdminEmail(e.target.value)} 
+                      placeholder="이메일 입력"
+                    />
+                  </div>
+
+                  <button 
+                    className="settings-save-btn" 
+                    onClick={() => {
+                      if (!adminRealName || !adminPhone || !adminEmail) {
+                        alert("필수 입력 항목이 누락되었습니다.");
+                        return;
+                      }
+                      alert("관리자 정보가 성공적으로 저장되었습니다.");
+                    }}
+                  >
+                    수정 내용 저장
+                  </button>
+                </div>
+              )}
+
+              {activeSettingsTab === "security" && (
+                <div className="settings-tab-content">
+                  <h2>비밀번호 변경</h2>
+                  <p className="tab-description">시스템 보안을 위해 주기적으로 비밀번호를 변경해 주십시오.</p>
+                  
+                  <div className="settings-form-group">
+                    <label>현재 비밀번호</label>
+                    <input 
+                      type="password" 
+                      placeholder="현재 비밀번호 입력" 
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="settings-form-group">
+                    <label>새 비밀번호</label>
+                    <input 
+                      type="password" 
+                      placeholder="새 비밀번호 입력" 
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="settings-form-group">
+                    <label>새 비밀번호 확인</label>
+                    <input 
+                      type="password" 
+                      placeholder="새 비밀번호 다시 입력" 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <button 
+                    className="settings-save-btn" 
+                    onClick={() => {
+                      if (!currentPassword || !newPassword || !confirmPassword) {
+                        alert("모든 필드를 입력해 주세요.");
+                        return;
+                      }
+                      if (newPassword !== confirmPassword) {
+                        alert("새 비밀번호가 서로 일치하지 않습니다.");
+                        return;
+                      }
+                      alert("비밀번호가 성공적으로 변경되었습니다.");
+                      setCurrentPassword("");
+                      setNewPassword("");
+                      setConfirmPassword("");
+                    }}
+                  >
+                    비밀번호 변경 완료
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
