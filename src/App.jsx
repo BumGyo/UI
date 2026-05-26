@@ -694,7 +694,7 @@ function Dashboard({ onLogout }) {
       {/* 상단 네비게이션 바 */}
       <header className="top-navbar">
         <div className="nav-section nav-left">
-          <button className="nav-logo nav-home-btn" onClick={handleBackToHome}>AI COMS</button>
+          <button className="nav-logo nav-home-btn" onClick={handleBackToHome}>SIOT</button>
         </div>
         <div className="nav-section nav-center">
           <span className="nav-title" aria-hidden="true"></span>
